@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "313259011469",
+    "project_id": "eventos-b5990",
+    "storage_bucket": "eventos-b5990.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:313259011469:android:1e524cc61d968e053621c4",
+        "android_client_info": {
+          "package_name": "com.example.myapplication"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBKm75i2nUtvle60nGDWXzyyvAKDsn5sUU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

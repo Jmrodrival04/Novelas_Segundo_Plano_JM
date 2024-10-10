@@ -18,6 +18,11 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,11 +31,13 @@ public class MainActivity extends AppCompatActivity {
     private Button buttonAddBook;
     private Button buttonSyncData;
     private RecyclerView recyclerView;
-    private NovelViewModel novelViewModel;
     private NovelAdapter novelAdapter;
     private BroadcastReceiver syncReceiver;
     private List<Novel> novelasList = new ArrayList<>();
 
+    // Referencia a la base de datos de Firebase Firestore
+    private FirebaseFirestore db = FirebaseFirestore.getInstance();
+    private CollectionReference novelsRef = db.collection("novels"); // Colección para almacenar las novelas
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
@@ -49,16 +56,10 @@ public class MainActivity extends AppCompatActivity {
         novelAdapter = new NovelAdapter();
         recyclerView.setAdapter(novelAdapter);
 
-        // Inicializar el ViewModel y observar los cambios en la lista de novelas
-        novelViewModel = new ViewModelProvider(this).get(NovelViewModel.class);
-        novelViewModel.getAllNovels().observe(this, new Observer<List<Novel>>() {
-            @Override
-            public void onChanged(List<Novel> novels) {
-                novelAdapter.setNovels(novels);  // Actualizar la lista de novelas en el adaptador
-            }
-        });
+        // Cargar novelas desde Firestore y mostrarlas en el RecyclerView
+        loadNovelsFromFirestore();
 
-        // Lógica del botón para agregar una nueva novela (Placeholder)
+        // Lógica del botón para agregar una nueva novela
         buttonAddBook.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -78,30 +79,26 @@ public class MainActivity extends AppCompatActivity {
                 // Crear una nueva instancia de la novela
                 Novel nuevaNovela = new Novel(titulo, autor);
 
-                // Agregarla a la base de datos o lista (depende de cómo estés almacenando las novelas)
-                // Supongamos que tienes una lista de novelas en la aplicación
-                novelasList.add(nuevaNovela);
-
-                // También puedes guardarla en una base de datos (ejemplo usando SQLite)
-                // databaseHelper.addNovela(nuevaNovela);
-
-                // Limpiar los campos
-                tituloInput.setText("");
-                autorInput.setText("");
-
-                // Notificar al usuario
-                Toast.makeText(v.getContext(), "Novela agregada", Toast.LENGTH_SHORT).show();
+                // Guardar la novela en Firestore
+                novelsRef.add(nuevaNovela)
+                        .addOnSuccessListener(documentReference -> {
+                            Toast.makeText(MainActivity.this, "Novela agregada", Toast.LENGTH_SHORT).show();
+                            // Limpiar los campos
+                            tituloInput.setText("");
+                            autorInput.setText("");
+                            // Recargar la lista de novelas
+                            loadNovelsFromFirestore();
+                        })
+                        .addOnFailureListener(e -> Toast.makeText(MainActivity.this, "Error al agregar novela", Toast.LENGTH_SHORT).show());
             }
-
         });
 
-        // Lógica del botón para iniciar la sincronización de datos
+        // Lógica del botón para sincronizar los datos (Placeholder para ejemplo)
         buttonSyncData.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Ejecutar la tarea de sincronización pasando el contexto de la actividad
-                SyncDataTask syncDataTask = new SyncDataTask(MainActivity.this);
-                syncDataTask.execute();
+                // Sincronizar datos desde Firebase (Placeholder)
+                loadNovelsFromFirestore();
             }
         });
 
@@ -125,5 +122,20 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         // Asegurarse de desregistrar el BroadcastReceiver para evitar fugas de memoria
         unregisterReceiver(syncReceiver);
+    }
+
+    // Método para cargar las novelas desde Firestore
+    private void loadNovelsFromFirestore() {
+        novelsRef.get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    novelasList.clear(); // Limpiar la lista antes de agregar las novelas
+                    for (QueryDocumentSnapshot documentSnapshot : queryDocumentSnapshots) {
+                        Novel novel = documentSnapshot.toObject(Novel.class);
+                        novelasList.add(novel);  // Agregar cada novela a la lista
+                    }
+                    // Actualizar el RecyclerView con las nuevas novelas
+                    novelAdapter.setNovels(novelasList);
+                })
+                .addOnFailureListener(e -> Toast.makeText(MainActivity.this, "Error al cargar novelas", Toast.LENGTH_SHORT).show());
     }
 }
